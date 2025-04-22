@@ -1,0 +1,213 @@
+---
+title: "Basics of Predictive Analytics"
+author: "DO Agoons"
+date: "2025-04-07"
+output: html_document
+---
+*Understanding Predictive Analytics*
+
+Two things are very recurrent when aalyzing data, the mean (average) and the departure from the mean (in literal terms) measured by a metric called variance. *Before analyzing any data, you need to clearly state the goal of the analysis; there coould be three types of goals you can have:* 
+
+- *interpretation* - this helps to understand phenomena and interpreting what the results of our model tell us. 
+- *Inference* - this is about setting out the effect of a particular phenomena (based on your gut or unsd of the situation) and then using data to see if it supports your hypothesis. For example: 
+
+• Claim: Increased advertising leads to higher sales
+• Claim: Increased minimum wage leads to less unemployment
+• Claim: More years of college education leads to higher income
+• Claim: LEating vegatables keeps your body lin
+All these axioms need to be proven with data. 
+
+- *Prediction*: 
+• How many customers will leave the company next year?
+• Which party will hold the majority in the house and senate in two years everything being equal? 
+• What are the chances that a new email is spam?
+• Which clients will default on their loan given a set of parameters?
+
+*For descriptive analytics*
+- *Quantitative x Quantitative:* USE Correlation analysis
+- *Quantitative x Categorical:* Use ANOVA which analyzes if the means vary widely across categories
+- *Categorical x Categorical:* Use (Chi Square) Test of Independence which evaluate if values of one categorical variable values are associated with values from another (dependent) or not (independent)  
+
+Much of the analysis done in predictive analytics is aboout mean and variance. The first of examples is something called ANOVA:: 
+
+[A] *Analysis of variance (ANOVA) tests whether the mean of a given quantitative variable is the same between two or more categories or groups.*
+• It compares the variance within each group against the variance of the means between groups.
+• For example, if we want to test if the mileage is different between foreign and domestic cars, or if the price of a diamond is different for various color classifications, we can do an ANOVA test.
+
+*RULE* :: Is the [numerical/quant measure] different for [categorical var with levels]? 
+To solve problems using ANOVA, *visually inspection (using boxplots)* and *statistical test.* 
+
+
+[B] *Chi-squared test of independence* ~ *Categorical vs categoorical variable* 
+
+Suppose that you want to *test the effectiveness* of *two donation campaigns A and B*, on driving donations ?!
+
+• The most common way to test whether two categorical variables are related (one influences the other) or independent (no influence) is with a Chi Square Test of Independence
+• The first step is to cross-tabulate the data with Donation (yes or no) as rows and Campaign (A or B) as columns and enter the respective counts in the cells.
+• Then run a Chi Square test on the cross table
+
+[C] *Correlation*
+Lets illustrate this using the motor trend car road tests data, extracted from 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobiles design and performance for 32 automibiles. 
+
+*ANOVA*
+There are 2 popular functions to do ANOVA tests: `aov()` and `anova()`
+
+*## The aov() Function*
+
+The `aov()` function is useful to compare the means of a continuous variable (e.g., price) across various categories (e.g. color,clarity). In this example, we look at what influences the price of diamonds given some parameters. 
+Qn: What does the price of diamond depend on? Lets explore this together. We begin by exploring the dataset 'diamonds' 
+```{r}
+??diamonds
+require(ggplot2) # Contains the diamonds data set
+
+ANOVA = aov(price ~ clarity, data = diamonds) # Run the ANOVA on a single factor
+summary(ANOVA)
+```
+`Interpretation`:
+*There is a significant difference in price across the clarity categories* and thus, the price of diamonds depend on 'clarity' variable. 
+
+Qn: Is a difference in price of diamonds across 'color', 'clarity', and 'cut'? 
+`Interpretation`: Statistically, there is a significant difference between in price across 'color', 'clarity', and 'cut' (this difference is not a coincidence). 
+*Ho: The 'color', 'clarity', and 'cut' of diamond have no effect on the price of diamond*
+*ha: The 'color', 'clarity', and 'cut' of diamond affect the price of diamond*
+```{r}
+summary(aov(price ~ clarity + color, data = diamonds)) # ANOVA on 2 factors
+
+summary(aov(price ~ clarity + color + cut, data = diamonds)) # On 3 factors
+```
+*Visually speaking*
+You can also visualize the differences with boxplots. These visualizations should tell a similar story than the respective ANOVA tests, but without significance statistics, just visually:
+
+```{r}
+boxplot(price ~ clarity, 
+        data = diamonds)
+
+boxplot(price ~ cut, data = diamonds)
+
+boxplot(price ~ clarity + cut, data = diamonds) 
+```
+
+*Predicting Credit Card Defaults: How the 'Balance' on the credit card, Not the customer's level of 'Income', Tells the Real Story* *about credit card default*. 
+
+This code explores why some people default on their credit card debt using a dataset called “Default.” from the {ISLR} library. Since there are way more people who paid their debt (non-defaulters) than those who didn’t (defaulters), the code balances things out by keeping all 333 defaulters and randomly selecting 333 non-defaulters for a fair comparison. It then creates charts to show how credit card balance and income relate to defaulting. The analysis finds that people with higher credit card balances are statistically more likely to default, while income level doesn’t have much of an effect.
+
+```{r}
+library(ISLR) # Contains the Default data set
+
+set.seed(1)
+
+head(Default) # credit card debt data set used to predict customers that will default on their credit card debt. 
+
+## Required to build a balanced dataset of defaulters and non-defaulters, 'default' is the dep var
+
+summary(Default$default) # NO~9667 | YES~333 
+
+def.yes <- subset(Default, 
+                  default == "Yes") # Subset with all default loans
+
+def.no <- subset(Default, 
+                 default == "No") # Subset with all no-default loans
+
+def.no <- def.no[sample(nrow(def.no), 333),] # Extract 333 of them randomly
+
+def.sub <- rbind(def.yes, def.no) # Bind the defaults and no defaults
+
+# Scatterplot with vertical lines at the respective means
+
+plot(income ~ balance, 
+     data = def.sub,
+     col = ifelse(default == "No", "darkgreen", "purple"),
+     pch = ifelse(default == "No", 1, 3))
+
+abline(v = mean(def.sub$balance), col = "red") 
+
+# abline(h=mean(def.sub$income), col="red") 
+
+abline(h = 40000, col = "red") 
+
+boxplot(balance ~ default, 
+        data = def.sub, 
+        col = c("darkgreen","purple"))
+
+boxplot(income ~ default, 
+        data = def.sub, 
+        col = c("darkgreen","purple"))
+
+# Is there a relationship b/w people who default and the balance on their credit card ? Statistically, YES. 
+summary(aov(balance ~ default, 
+            data = def.sub))
+
+# Is there a relationship b/w people who default and their income level ? Statistically, NO. 
+summary(aov(income ~ default, 
+            data = def.sub))
+```
+
+
+## The anova() Function
+
+The `anova()` function is *useful when comparing nested linear models*. One model is nested withing another if the larger models contains all the predictors of the small model. Let's fit 3 nested regression models with the diamonds data set and price as the outcome variable. *The first model is the null model with no predictors (`~ 1` in the model indicates the intercept as the only predictor*, and in this case nothing else). The second model is a simple linear regression model with a single predictors, and the last has 2 predictors.
+
+```{r}
+lm.null <- lm(price ~ 1, 
+              data = diamonds) # Null model
+
+lm.small <- lm(price ~ carat, 
+               data = diamonds) # Small model
+
+lm.large <- lm(price ~ carat + clarity, 
+               data = diamonds) # Large model
+
+anova(lm.null, lm.small, lm.large) # Compare 3 nested models
+```
+Meaning of the results:: 
+*The output shows 3 models and 2 ANOVA test results. The first ANOVA test compares the second model to the first in the `anova()` function. The second ANOVA test compares the thirds model to the second.* You can test as many nested models as you wish in one pass. 
+- *The first p-value is significant, so the small model has significantly more explanatory power than the null model*. 
+- The second p-value is also significant, so the large model has more explanatory power than the small model. 
+- In other words, 'carats' explain more variance in price of diamonds than just the mean price, but adding 'clarity' as a predictor improves the explanatory power over the small model.
+
+
+
+# 3. Chi-Square Test of Independence `(Categorical x Categorical)`
+
+To investigate if diamond "cut" and "color" are independent (i.e. one does not affect the value of the other) or if they are dependent (i.e., the value of one variable influences the value of another), we use Chi-Squared test since these are all categorical variables. 
+*Ho: The diamond "cut" and "color" have no effect on each other. *
+*Ha: The diamond "cut" and "color" affect each other. *
+
+The first step is to prepare a cross table with the counts for both categories
+
+```{r}
+#| message: false
+
+attach(diamonds)
+cross.table <- table (cut, color) # Store results in a cross table
+cross.table # Check it out
+```
+
+We can now look at the margin totals:
+
+```{r}
+rowSums(cross.table) # Check the row totals
+cat("\n") # Blank line
+
+colSums(cross.table) # Check the column totals
+cat("\n") # Blank line
+
+sum(rowSums(cross.table)) # Compute table totals
+sum(colSums(cross.table)) # Same result
+```
+
+*If the row and column variables are totally independent* the proportion of `rowSums()` would be identical to the proportion of any two cells on the same two rows of the table. Similarly, the proportion `colSums()` would be identical to the proportion of any two cells on the same two columns.
+
+In fact, you can create a table of expected values as follows: `Exp.Cell(i,j) = rowSum(i) * colSum(j) / table.tot`. If the **observed** (actual) values in the table are close to the **expected** values, the two variables are independent. If the observed values are very different than the expected values, the two variables are dependent (i.e., they co-vary)
+
+The `chisq.test()` function does this test for you when you feed it the cross table. The null hypothesis is that the two variables are independent. A significant p-value rejects the null hypothesis suggesting that the variables are dependent. In addition, we can extract the observed an expected values from the `chisq.test()` object:
+
+```{r}
+chiSq.diamonds <- chisq.test(cross.table) # Conduct the test
+chiSq.diamonds$observed # Check the observed values, same as the cross.table
+
+print(chiSq.diamonds$expected, digits = 2) # Check the expected values
+chiSq.diamonds # Check out Chi Square test results
+```
+
+The p-value is significant, so we reject the null hypothesis that cut and color are independent and conclude that they are dependent (i.e., they co-vary) and both influence the price of diamonds. 
